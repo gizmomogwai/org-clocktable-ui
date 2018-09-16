@@ -73,6 +73,41 @@ PARAMETERS the org-kanban parameters."
     (widget-setup)))
 
 ;;;###autoload
+(defun org-clocktable-ui-initialize (&optional arg)
+  "Create an org-clocktable dynamic block at position ARG."
+  (interactive "p")
+  (cond (
+          (eq arg nil) (org-clocktable-ui-initialize-here))
+    ((eq arg 1) (org-clocktable-ui-initialize-here))
+    ((eq arg 4) (org-clocktable-ui-initialize-at-beginning))
+    ((eq arg 16) (org-clocktable-ui-initialize-at-end))
+    (t (error (message "Unsupported universal argument %s" arg)))))
+
+;;;###autoload
+(defun org-clocktable-ui-initialize-at-beginning ()
+  "Create an org-clocktable dynamic block at the beginning of the buffer."
+  (interactive)
+  (save-excursion
+    (goto-char (point-min))
+    (forward-line)
+    (org-clocktable-ui--initialize-at-point)))
+
+;;;###autoload
+(defun org-clocktable-ui-initialize-at-end ()
+  "Create an org-clocktable-ui dynamic block at the end of the buffer."
+  (interactive)
+  (save-excursion
+    (goto-char (point-max))
+    (newline)
+    (org-clocktable-ui--initialize-at-point)))
+
+(defun org-clocktable-ui--initialize-at-point ()
+  "Create an org-clocktable dynamic block at the point."
+  (save-excursion
+    (insert "#+BEGIN: clocktable :maxlevel 10\n#+END:\n"))
+  (org-ctrl-c-ctrl-c))
+
+;;;###autoload
 (defun org-clocktable-ui-configure ()
   "Configure the current org-clocktable dynamic block."
   (interactive)
@@ -81,7 +116,6 @@ PARAMETERS the org-kanban parameters."
             (beginning (org-beginning-of-dblock))
             (parameters (org-prepare-dblock)))
       (org-clocktable-ui--show-configure-buffer (current-buffer) beginning parameters))))
-
 
 (provide 'org-clocktable-ui)
 ;;; org-clocktable-ui.el ends here
