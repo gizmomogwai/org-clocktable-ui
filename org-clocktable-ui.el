@@ -19,35 +19,55 @@
 
 ;;; Code:
 
-(defun org-clocktable-ui--calculate-preview (maxlevel)
-  "Calculate the clocktable heading for MAXLEVEL."
+(defun org-clocktable-ui--calculate-preview (parameters)
+  "Calculate the clocktable heading for PARAMETERS."
   (setq res "#+BEGIN: clocktable")
-  (if maxlevel
-    (setq res (concat res " :maxlevel " maxlevel)))
+  
+  (if (plist-member parameters :maxlevel)
+    (setq res (concat res (format " :maxlevel %s" (plist-get parameters :maxlevel)))))
+  (if (plist-member parameters :match)
+    (setq res (concat res (format " :match \"%s\"" (plist-get parameters :match)))))
   res)
 
-(defun org-clocktable-ui--update-preview (preview maxlevel)
-  "Set the PREVIEW widget for MAXLEVEL."
-  (widget-value-set preview (org-clocktable-ui--calculate-preview maxlevel)))
+(defun org-clocktable-ui--update-preview (preview parameters)
+  "Set the PREVIEW widget for PARAMETERS."
+  (widget-value-set preview (org-clocktable-ui--calculate-preview parameters)))
 
-(defun org-clocktable-ui--show-configure-buffer (buffer beginning parameters)
+(defun org-clocktable-ui--show-configure-buffer (buffer beginning original-parameters)
   "Create the configuration form for BUFFER.
 BEGINNING the position there and
-PARAMETERS the org-kanban parameters."
+ORIGINAL-PARAMETERS the org-kanban parameters."
   (switch-to-buffer "*org-clocktable-ui-configure*")
   (let (
+         (parameters (copy-sequence original-parameters))
          (inhibit-read-only t)
-         (maxlevel (format "%s" (or (plist-get parameters :maxlevel) 2)))
          (preview nil))
     (erase-buffer)
     (remove-overlays)
+    
     (widget-insert (propertize "Maxlevel: " 'face 'font-lock-keyword-face))
     (widget-create 'editable-field
-      :value maxlevel
+      :value (format "%s" (or (plist-get parameters :maxlevel) 2))
       :size 5
       :notify (lambda (widget &rest ignore)
-                (setq maxlevel (widget-value widget))
-                (org-clocktable-ui--update-preview preview maxlevel)))
+                (plist-put parameters :maxlevel (string-to-number (widget-value widget)))
+                (org-clocktable-ui--update-preview preview parameters)))
+    (widget-insert "\n")
+    (widget-insert (propertize "  Maximum level depth to which times are listed in the table.\n  Clocks at deeper levels will be summed into the upper level." 'face 'font-lock-doc-face))
+    (widget-insert "\n")
+
+    (widget-insert "\n")
+    (widget-insert (propertize "Match: " 'face 'font-lock-keyword-face))
+    (widget-create 'editable-field
+      :value (or (plist-get parameters :match) "")
+      :size 5
+      :notify (lambda (widget &rest ignore)
+                (plist-put parameters :match (widget-value widget))
+                (org-clocktable-ui--update-preview preview parameters)))
+    (widget-insert "\n")
+    (widget-insert (propertize "  see https://orgmode.org/manual/Matching-tags-and-properties.html#Matching-tags-and-properties on how to match tags e.g.: urgent|important" 'face 'font-lock-doc-face))
+    (widget-insert "\n")
+
     (widget-insert "\n")
     (widget-insert (propertize "Result: " 'face 'font-lock-keyword-face))
     (setq preview
@@ -58,7 +78,7 @@ PARAMETERS the org-kanban parameters."
                 (with-current-buffer buffer
                   (goto-char beginning)
                   (kill-line)
-                  (insert (org-clocktable-ui--calculate-preview maxlevel)))
+                  (insert (org-clocktable-ui--calculate-preview parameters)))
                 (kill-buffer)
                 (org-ctrl-c-ctrl-c))
       (propertize "Apply" 'face 'font-lock-comment-face))
@@ -68,7 +88,7 @@ PARAMETERS the org-kanban parameters."
                 (kill-buffer))
       (propertize "Cancel" 'face 'font-lock-string-face))
     
-    (org-clocktable-ui--update-preview preview maxlevel)
+    (org-clocktable-ui--update-preview preview parameters)
     (use-local-map widget-keymap)
     (widget-setup)))
 
