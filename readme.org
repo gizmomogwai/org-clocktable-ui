@@ -2,4 +2,5 @@
 
 Simple ui that helps with customizing org-clocktables.
 
-Just call org-clocktable-ui-configure when inside a clocktable.
+Just call =org-clocktable-ui-configure= when inside a clocktable.
+To create a new clocktable call one of =org-clocktable-ui-initialize*= functions.
