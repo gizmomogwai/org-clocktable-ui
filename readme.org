@@ -1,0 +1,5 @@
+* org-clocktable-ui
+
+Simple ui that helps with customizing org-clocktables.
+
+Just call org-clocktable-ui-configure when inside a clocktable.
